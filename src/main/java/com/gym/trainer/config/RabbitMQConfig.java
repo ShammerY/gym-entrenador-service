@@ -11,6 +11,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -25,6 +26,9 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_GIMNASIO = "gimnasio.exchange";
     public static final String QUEUE_TRAINER = "trainer.clase.entrenador.queue";
     public static final String BINDING_KEY= "clase.entrenador.#";
+
+    public static final String QUEUE_ENTRENADORES_HORARIO = "entrenadores.horario.queue";
+    public static final String BINDING_KEY_HORARIO = "clase.horario.#";
 
     @Bean
     @ConditionalOnMissingBean(ObjectMapper.class)
@@ -51,6 +55,16 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue entrenadoresHorarioQueue() {
+        return new Queue(QUEUE_ENTRENADORES_HORARIO, true);
+    }
+
+    @Bean
+    public Binding entrenadoresHorarioBinding(Queue entrenadoresHorarioQueue, TopicExchange gimnasioExchange) {
+        return BindingBuilder.bind(entrenadoresHorarioQueue).to(gimnasioExchange).with(BINDING_KEY_HORARIO);
+    }
+
+    @Bean
     @SuppressWarnings("removal")
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
         return new Jackson2JsonMessageConverter(objectMapper);
@@ -65,6 +79,13 @@ public class RabbitMQConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
         return factory;
+    }
+
+    @Bean
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
+        RabbitTemplate template = new RabbitTemplate(connectionFactory);
+        template.setMessageConverter(messageConverter);
+        return template;
     }
     
 
